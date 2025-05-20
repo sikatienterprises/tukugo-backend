@@ -1,13 +1,16 @@
+from datetime import timedelta, timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status,permissions
 from .serializers import RegisterSerializer,LoginSerializer,LogoutSerializer
 from .serializers import UserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken,TokenError
-from custom_auth.models import OTP, User
+from custom_auth.models import OTP, User,PasswordResetOTP
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAdminUser
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
 
 #signup apis
 @permission_classes([AllowAny]) #ignore global permission ,if is add this its ignore golbal permission which is only otp verified user can use this api
@@ -101,3 +104,84 @@ class LogoutAPIView(APIView):
                 return Response({"detail": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+class ResetPasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+
+        if not old_password or not new_password:
+            return Response({'error': 'Both old and new passwords are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.check_password(old_password):
+            return Response({'error': 'Old password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+        return Response({'message': 'Password updated successfully.'}, status=status.HTTP_200_OK)
+
+
+#forgot password send otp and check valid or not and then send otp
+
+@permission_classes([AllowAny]) 
+class ForgotPasswordView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        otp = get_random_string(length=6, allowed_chars='1234567890')
+
+        otp_entry, created = PasswordResetOTP.objects.update_or_create(
+            user=user,
+            is_verified=False,
+            defaults={'otp': otp}
+        )
+
+        # # Send OTP via email
+        # send_mail(
+        #     'TukuGO - Password Reset OTP',
+        #     f'Your OTP to reset password is: {otp}',
+        #     'noreply@tukugo.com',
+        #     [email],
+        #     fail_silently=False,
+        # )
+
+        return Response({'message': 'OTP sent to your email address.'}, status=status.HTTP_200_OK)
+
+#reset password if otp match then new password change
+class ResetPasswordWithOTPView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        new_password = request.data.get('new_password')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            otp_entry = PasswordResetOTP.objects.filter(user=user, otp=otp, is_verified=False).latest('created_at')
+        except PasswordResetOTP.DoesNotExist:
+            return Response({'error': 'Invalid or expired OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        #Optional: check OTP expiration (e.g., 10 minutes)
+        if timezone.now() - otp_entry.created_at > timedelta(minutes=10):
+            return Response({'error': 'OTP expired'}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+        otp_entry.is_verified = True
+        otp_entry.save()
+
+        return Response({'message': 'Password reset successful.'}, status=status.HTTP_200_OK)

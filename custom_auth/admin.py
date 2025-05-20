@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from custom_auth.models import User,OTP
+from custom_auth.models import User,OTP,PasswordResetOTP
 
 class UserAdmin(BaseUserAdmin):
     model = User
@@ -24,3 +24,4 @@ class UserAdmin(BaseUserAdmin):
 
 admin.site.register(User, UserAdmin)
 admin.site.register(OTP)
+admin.site.register(PasswordResetOTP)
