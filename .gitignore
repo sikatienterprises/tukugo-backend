@@ -1,0 +1,38 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django specific
+*.log
+*.pot
+*.pyc
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
+# Environment variables
+.env
+
+# PostgreSQL
+*.pgsql
+*.sql
+
+# VSCode settings
+.vscode/
+
+# macOS
+.DS_Store
+
+# Virtual environment
+env/
+venv/
+ENV/
+
+# Migrations (optional)
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# WeasyPrint or PDF output
+*.pdf

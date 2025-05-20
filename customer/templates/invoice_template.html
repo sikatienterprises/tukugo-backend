@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice #{{ ride.id }}</title>
+</head>
+<body>
+    <h1>Invoice for Ride #{{ ride.id }}</h1>
+    <p><strong>Customer:</strong> {{ ride.customer.username }}</p>
+    <p><strong>Driver:</strong> {{ ride.driver.driver_name }}</p>
+    <p><strong>Pickup:</strong> {{ ride.pickup_location }}</p>
+    <p><strong>Drop:</strong> {{ ride.drop_location }}</p>
+    <p><strong>Fare:</strong> ₹{{ ride.fare }}</p>
+    <p><strong>Status:</strong> {{ ride.status }}</p>
+    <p><strong>Date:</strong> {{ ride.requested_at }}</p>
+    <button onclick="window.print()">Download/Print Invoice</button>
+
+</body>
+</html>
