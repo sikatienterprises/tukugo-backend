@@ -11,6 +11,8 @@ from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAdminUser
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
+from custom_auth.utils import send_otp_email
+from django.utils import timezone
 
 #signup apis
 @permission_classes([AllowAny]) #ignore global permission ,if is add this its ignore golbal permission which is only otp verified user can use this api
@@ -148,14 +150,9 @@ class ForgotPasswordView(APIView):
         )
 
         # # Send OTP via email
-        # send_mail(
-        #     'TukuGO - Password Reset OTP',
-        #     f'Your OTP to reset password is: {otp}',
-        #     'noreply@tukugo.com',
-        #     [email],
-        #     fail_silently=False,
-        # )
+        send_otp_email(email, otp)
 
+        
         return Response({'message': 'OTP sent to your email address.'}, status=status.HTTP_200_OK)
 
 #reset password if otp match then new password change
