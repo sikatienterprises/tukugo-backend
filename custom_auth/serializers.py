@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from custom_auth.utils import send_otp_email
 from .models import User
 
 from django.contrib.auth import authenticate,get_user_model
@@ -82,6 +84,8 @@ class LoginSerializer(serializers.Serializer):
                 'is_verified': False
             }
         )
+        send_otp_email(user.email, otp_code)
+
 
         # ✅ Simulate sending OTP to phone
         print(f"Sending OTP {otp_code} to phone: {user.phone}")  # Replace with actual SMS logic
