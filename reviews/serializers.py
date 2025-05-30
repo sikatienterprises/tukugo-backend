@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import RideRating, RideIssue
+from reviews.models import RideRating, RideIssue,DriverSupportRequest
 
 
 class RideRatingSerializer(serializers.ModelSerializer):
@@ -20,3 +20,8 @@ class RideIssueSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['customer'] = self.context['request'].user
         return super().create(validated_data)
+
+class DriverSupportRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DriverSupportRequest
+        fields = ['id', 'message', 'created_at']

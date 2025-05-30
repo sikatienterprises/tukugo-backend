@@ -87,12 +87,12 @@ class LoginSerializer(serializers.Serializer):
         send_otp_email(user.email, otp_code)
 
 
-        # ✅ Simulate sending OTP to phone
-        print(f"Sending OTP {otp_code} to phone: {user.phone}")  # Replace with actual SMS logic
+        # ✅ Simulate sending OTP to email
+        print(f"Sending OTP {otp_code} to Email address: {user.email}")  # Replace with actual SMS logic
 
         # ✅ Return message + user_id only
         return {
-            "message": "OTP sent to your phone number.",
+            "message": "OTP sent to your email address.",
             "user_id": user.id
         }
 

@@ -17,3 +17,12 @@ class RideIssue(models.Model):
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     issue = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DriverSupportRequest(models.Model):
+    driver = models.ForeignKey('driver.Driver', on_delete=models.CASCADE)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.driver.user.username} - {self.created_at}"

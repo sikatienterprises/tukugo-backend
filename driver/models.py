@@ -17,9 +17,11 @@ class Driver(models.Model):
     vehicle_number = models.CharField(max_length=50)
     city = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_available = models.BooleanField(default=False)
+
 
     def __str__(self):
-        return self.user.username
+        return f"{self.user.username} - {'Online' if self.is_available else 'Offline'}"
 
 #for rider's location
 class RiderLocation(models.Model):

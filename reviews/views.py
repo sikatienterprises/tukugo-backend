@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RideRatingSerializer, RideIssueSerializer
+from .serializers import RideRatingSerializer, RideIssueSerializer,DriverSupportRequestSerializer
 
 from customer.models import Ride  
 from reviews.models import RideRating  ,RideIssue
@@ -55,4 +55,30 @@ def report_issue(request):
         serializer.save()
         return Response({"message": "Issue reported successfully"}, status=status.HTTP_201_CREATED)
 
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#view only his own feedback which given from users
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def driver_reviews(request):
+    if request.user.role != 'driver':
+        return Response({"error": "Permission denied."}, status=403)
+
+    driver = request.user.driver_profile
+    ratings = RideRating.objects.filter(driver=driver).order_by('-created_at')
+    serializer = RideRatingSerializer(ratings, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def raise_driver_support_request(request):
+    if request.user.role != 'driver':
+        return Response({"error": "Permission denied."}, status=403)
+
+    driver = request.user.driver_profile
+    serializer = DriverSupportRequestSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(driver=driver)
+        return Response({"message": "Support request submitted successfully."}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

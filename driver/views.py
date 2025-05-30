@@ -197,3 +197,24 @@ def cancelled_ride(request):
         return Response({"message": "Ride cancelled successfully."}, status=200)
     except Ride.DoesNotExist:
         return Response({"error": "Ride not found "}, status=400)
+
+#online offline available or not
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def toggle_driver_availability(request):
+    try:
+        driver = Driver.objects.get(user=request.user)
+        if request.user.role != 'driver':
+            return Response({"error": "Permission denied."}, status=403)
+
+        # Flip the availability
+        driver.is_available = not driver.is_available
+        driver.save()
+
+        return Response({
+            "message": f"Driver is now {'Online' if driver.is_available else 'Offline'}",
+            "is_available": driver.is_available
+        }, status=status.HTTP_200_OK)
+
+    except Driver.DoesNotExist:
+        return Response({"error": "Driver profile not found."}, status=status.HTTP_404_NOT_FOUND)
