@@ -1,6 +1,6 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from .models import Driver,RiderLocation
+from .models import Driver,RiderLocation,DriverPenalty
 from customer.models import Ride
 from .serializers import DriverSerializer,RiderLocationSerializer,RideListSerializer,AcceptRideSerializer
 from rest_framework.views import APIView
@@ -182,21 +182,76 @@ def complete_ride(request):
         return Response({"message": "Ride complete successfully."}, status=200)
     except Ride.DoesNotExist:
         return Response({"error": "Ride not found or not in 'ongoing' status."}, status=400)
+    
+# penalty function after driver cancel ride book incress 1 point penalty
+def cancel_and_reassign_ride(ride: Ride, cancelling_driver, reason):
+    # 1. Mark ride cancelled
+    ride.status = 'cancelled'
+    ride.cancel_reason = reason
+    ride.save()
 
+    # 2. Log penalty
+    DriverPenalty.objects.create(
+        driver=cancelling_driver,
+        ride=ride,
+        reason=reason,
+        penalty_points=1
+    )
 
+    # 3. Find another available driver
+    new_driver = Driver.objects.filter(
+        is_available=True,
+        vehicle_type=ride.vehicle_type
+    ).exclude(id=cancelling_driver.id).first()
+
+    if new_driver:
+        ride.driver = new_driver
+        ride.status = 'reassigned'
+        ride.save()
+
+        # Send notification to new driver (placeholder)
+        print(f"Ride {ride.id} reassigned to {new_driver.user.username}")
+
+    else:
+        print("No available drivers to reassign.")
+
+#when driver cancel ride after assign ride
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def cancelled_ride(request):
-    driver = request.user.driver_profile
+    user = request.user
+    driver = getattr(user, 'driver_profile', None)
+
+    if not driver:
+        return Response({"error": "Only drivers can cancel rides."}, status=403)
+
     ride_id = request.data.get('ride_id')
+    reason = request.data.get('reason', '')
 
     try:
         ride = Ride.objects.get(id=ride_id, driver=driver)
+
+        if ride.status != 'assigned':
+            return Response({"error": "Only assigned rides can be cancelled."}, status=400)
+
+        # Update ride status
         ride.status = 'cancelled'
         ride.save()
-        return Response({"message": "Ride cancelled successfully."}, status=200)
+
+        # Log or store the cancellation reason (optional)
+        # You can create a model like DriverPenalty
+        cancel_and_reassign_ride(ride, cancelling_driver=driver, reason=reason)
+
+        # Auto-reassign logic placeholder (implement based on your logic)
+        # reassign_ride_to_another_driver(ride)
+
+        return Response({
+            "message": "Ride cancelled and reassigned if another driver is available.",
+            "reassign_attempted": True,  # or False based on logic
+        }, status=200)
+
     except Ride.DoesNotExist:
-        return Response({"error": "Ride not found "}, status=400)
+        return Response({"error": "Ride not found or not assigned to you."}, status=400)
 
 #online offline available or not
 @api_view(['POST'])

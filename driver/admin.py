@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Driver,RiderLocation
+from driver.models import Driver,RiderLocation,DriverPenalty
 
 @admin.register(Driver)
 class DriverAdmin(admin.ModelAdmin):
@@ -10,3 +10,4 @@ class DriverAdmin(admin.ModelAdmin):
 
 
 admin.site.register(RiderLocation)
+admin.site.register(DriverPenalty)

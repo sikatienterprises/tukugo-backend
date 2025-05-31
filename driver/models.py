@@ -32,3 +32,12 @@ class RiderLocation(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - ({self.latitude}, {self.longitude})"
+    
+
+
+class DriverPenalty(models.Model):
+    driver = models.ForeignKey('driver.Driver', on_delete=models.CASCADE)
+    ride = models.ForeignKey('customer.Ride', on_delete=models.CASCADE)
+    reason = models.CharField(max_length=255)
+    penalty_points = models.IntegerField(default=1)
+    timestamp = models.DateTimeField(auto_now_add=True)
