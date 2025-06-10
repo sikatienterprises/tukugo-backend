@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/driver/', include('driver.urls')),
     path('api/review/', include('reviews.urls')),
     path('api/notifications/', include('notifications.urls')),
+    path('api/location/', include('location.urls')),
 
 
 ]

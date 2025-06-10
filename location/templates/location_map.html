@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Location Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
+  <style>
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Find My Location</h2>
+  <div id="map"></div>
+  <p id="status"></p>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+  <script>
+    
+    let map, marker;
+
+    function initMap(lat, lng) {
+      map = L.map('map').setView([lat, lng], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+       marker = L.marker([lat, lng]).addTo(map)
+        .bindPopup("You are here!")
+        .openPopup(); 
+    }
+
+    function sendLocation(lat, lng) {
+      fetch('/api/location/save-location/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          {% comment %} 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ4OTU0ODA4LCJpYXQiOjE3NDg5NTMwMDgsImp0aSI6ImIxMWY1NzFjNzQyYTQ1ZWFiNTU5MWJjYmM3ZTYyZTIwIiwidXNlcl9pZCI6Mn0.ref_DdEXG3sA7IAxnRBMSpa5wdSorZhmJV6czL6SjHE'  {% endcomment %}
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ4OTU5NTUyLCJpYXQiOjE3NDg5NTU5NTIsImp0aSI6ImVjNmQwNDI2YjE3OTQzNDE4YzE0MjY5YzY3NjJjNzdkIiwidXNlcl9pZCI6NH0.MWp5_-QHnloD3u6Hkm63jNArR2fhYc7X1XrbvK-2T0s' 
+
+        },
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lng
+        })
+      }).then(res => res.json())
+        .then(data => console.log('Location sent:', data))
+        .catch(err => console.error('Error:', err));
+    }
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          document.getElementById("status").textContent = `Latitude: ${lat}, Longitude: ${lng}`;
+          initMap(lat, lng);
+          sendLocation(lat, lng);
+        },
+        function (error) {
+          document.getElementById("status").textContent = "Error getting location.";
+        }
+      );
+    } else {
+      document.getElementById("status").textContent = "Geolocation not supported.";
+    }
+      // Custom Icons
+  const riderIcon = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/128/2491/2491929.png',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+  });
+
+  const driverIcon = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/4900/4900915.png',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+  });
+
+  {% comment %} // Fetch rider and driver location
+  fetch('/api/location/get-all/')
+    .then(response => response.json())
+    .then(data => {
+      if (data.rider.lat && data.rider.lng) {
+        L.marker([data.rider.lat, data.rider.lng], { icon: riderIcon })
+          .addTo(map)
+          .bindPopup("Rider");
+      }
+
+      if (data.driver.lat && data.driver.lng) {
+        L.marker([data.driver.lat, data.driver.lng], { icon: driverIcon })
+          .addTo(map)
+          .bindPopup("Driver");
+      }
+    })
+    .catch(error => {
+      console.error("Error fetching locations:", error);
+    }); {% endcomment %}
+
+    // Fetch rider and driver location
+fetch('/api/location/get-all/')
+  .then(response => response.json())
+  .then(data => {
+    let riderLatLng = null;
+    let driverLatLng = null;
+
+    if (data.rider.lat && data.rider.lng) {
+      riderLatLng = L.latLng(data.rider.lat, data.rider.lng);
+      L.marker(riderLatLng, { icon: riderIcon })
+        .addTo(map)
+        .bindPopup("Rider");
+    }
+
+    if (data.driver.lat && data.driver.lng) {
+      driverLatLng = L.latLng(data.driver.lat, data.driver.lng);
+      L.marker(driverLatLng, { icon: driverIcon })
+        .addTo(map)
+        .bindPopup("Driver");
+    }
+
+    // Add route only if both rider and driver locations are available
+    if (riderLatLng && driverLatLng) {
+      L.Routing.control({
+        waypoints: [riderLatLng, driverLatLng],
+        routeWhileDragging: false
+      }).addTo(map);
+    }
+  })
+  .catch(error => {
+    console.error("Error fetching locations:", error);
+  });
+
+  </script>
+
+</body>
+</html>
